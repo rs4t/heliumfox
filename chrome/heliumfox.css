@@ -199,7 +199,7 @@
 .titlebar-button > .toolbarbutton-icon { stroke: var(--h-fg2) !important; }
 
 /* Hide things Helium doesn't show */
-#alltabs-button, #firefox-view-button, #ipprotection-button,
+#alltabs-button, #firefox-view-button, #ipprotection-button, #sidebar-button,
 #nav-bar-overflow-button:not([overflowedItems]),
 #tabs-newtab-button { display: none !important; }
 

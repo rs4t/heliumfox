@@ -30,6 +30,34 @@ Helium is the main inspiration. Its layout, sizes and colors were measured from 
 
 ## Installation
 
+### Quick way (Windows)
+
+Paste one of these into PowerShell and press Enter.
+
+**Theme only:**
+
+```powershell
+irm https://raw.githubusercontent.com/rs4t/heliumfox/main/install.ps1 | iex
+```
+
+**Theme + Helium's start page** ([Simple-start](https://github.com/SpringDallies/Simple-start) for new tabs and as your homepage):
+
+```powershell
+irm https://raw.githubusercontent.com/rs4t/heliumfox/main/install-with-startpage.ps1 | iex
+```
+
+The theme installer:
+- **Finds your profile:** it finds your Firefox profile and saves the theme as `heliumfox.css` and `heliumfox-content.css`.
+- **Imports the theme:** it imports them from `userChrome.css` and `userContent.css`. Other `@import` lines (like [Firefox Compact](https://github.com/rs4t/firefox-compact)) are kept.
+- **Replaces Latin Accent Plus:** it switches off Latin Accent Plus and its see-through settings if you had it, and backs up any older theme.
+- **Turns on settings:** it enables the settings HeliumFox needs.
+- **Arranges the toolbar:** if Firefox is closed, it arranges the toolbar like Helium. Your old settings are saved as `prefs.js.heliumfox-backup`.
+
+The start-page version also downloads Simple-start to `%APPDATA%\Mozilla\Firefox\simple-start`. It adds 2 small config files to the Firefox install folder, so Windows asks for admin rights once. Read what they do in [install.ps1](install.ps1) and [install-with-startpage.ps1](install-with-startpage.ps1).
+
+<details>
+<summary><b>Manual install</b> (or Mac/Linux)</summary>
+
 **1. Copy the files.** Open `about:profiles`, find the **Root Directory** of your active profile and open it.
 - Copy everything from [`chrome/`](chrome) into a `chrome` folder there. Create the folder if it doesn't exist.
 - Copy [`user.js`](user.js) next to it, directly in the profile folder.
@@ -43,11 +71,13 @@ If you already have a `userChrome.css` or `userContent.css`, add `@import "heliu
 - Remove the flexible spaces and the sidebar button.
 - Pinned extensions go after the `+`.
 
-**4. Optional: bookmarks bar.** Right-click the toolbar, then **Bookmarks Toolbar**, then **Only Show on New Tab** to get the hover reveal.
+</details>
+
+**Optional: bookmarks bar.** Right-click the toolbar, then **Bookmarks Toolbar**, then **Only Show on New Tab** to get the hover reveal.
 
 ### Optional: Helium's start page
 
-HeliumFox comes with a simple Helium-style new tab page (a gradient with a star). To use the same start page as Helium, use [**Simple-start**](https://github.com/SpringDallies/Simple-start) by SpringDallies:
+HeliumFox comes with a simple Helium-style new tab page (a gradient with a star). To use the same start page as Helium, use [**Simple-start**](https://github.com/SpringDallies/Simple-start) by SpringDallies. The second install command above sets it up for you. To do it by hand:
 
 1. Download Simple-start and extract it somewhere permanent.
 2. In [`newtab/mozilla.cfg`](newtab/mozilla.cfg), replace the example path with the path to its `index.html`.
