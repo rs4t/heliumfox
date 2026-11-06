@@ -1,0 +1,35 @@
+/* HeliumFox new tab page: empty page, soft gradient, centred star mark,
+   like Helium's start page. Only used when no new-tab extension or custom
+   new-tab page (see newtab/ in the repo) is active. */
+@-moz-document url("about:newtab"), url("about:home"), url("about:privatebrowsing") {
+  :root {
+    --h-ntp-top: #f6f6f8;
+    --h-ntp-bottom: #e4e4ec;
+    --h-ntp-mark: #3551d2;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --h-ntp-top: #0f1014;
+      --h-ntp-bottom: #2c2c36;
+      --h-ntp-mark: #e9ecf5;
+    }
+  }
+  html, body {
+    height: 100% !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+    background: linear-gradient(to bottom, var(--h-ntp-top), var(--h-ntp-bottom)) !important;
+  }
+  body > * { display: none !important; }
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    margin: auto;
+    width: 72px;
+    height: 72px;
+    background-color: var(--h-ntp-mark);
+    /* 8-arm asterisk */
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'%3E%3Cpath d='M12 2v20M2 12h20M4.9 4.9l14.2 14.2M19.1 4.9 4.9 19.1'/%3E%3C/svg%3E") center / contain no-repeat;
+  }
+}

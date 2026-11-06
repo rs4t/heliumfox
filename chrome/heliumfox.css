@@ -1,0 +1,902 @@
+/* ==========================================================================
+   HeliumFox  -  https://github.com/rs4t/heliumfox
+   Helium's look for Firefox, with a few twists from Latin Accent Plus.
+
+   Layout, sizes and colours copy Helium's "Dynamic" layout
+   (https://github.com/imputnet/helium, GPL-3.0):
+     Row 1:  <- -> reload [   address bar (centred)   ] + ext... puzzle ⋮  _ □ x
+     Row 2:  tabs (only shown when 2+ tabs are open)
+   Values were measured from a running Helium 0.21 window and checked
+   against Helium's source patches (layout-constants, color-scheme, tabs,
+   progress-bar, infobar, find-bar).
+
+   Accent colour, bookmarks-bar reveal, fullscreen pill and the animations
+   come from Latin Accent Plus (https://github.com/rs4t/latin-accent-plus).
+   ========================================================================== */
+
+/* ---------- Tweak these ---------- */
+:root {
+  --h-pad: 3px;              /* kHeliumBasePadding */
+  --h-bar: 28px;             /* address bar, buttons and tabs are all 28px tall */
+  --h-radius: 8px;           /* address bar, tabs, page corners */
+  --h-tab-slot: 201px;       /* tab pitch; background is 197px with a 4px gap */
+  --h-caption-width: 138px;  /* Windows minimise / maximise / close */
+  --h-url-font: 14px;
+  --h-tab-font: 12px;
+}
+
+/* ---------- Colours: light (Helium light palette from source) ---------- */
+:root {
+  --h-frame: #ffffff;
+  --h-field: #ededed;
+  --h-field-hover: #e6e6e6;
+  --h-tab-hover: #f7f7f7;
+  --h-popup: #ffffff;
+  --h-fg: #1a1c1c;
+  --h-fg2: #444747;
+  --h-icon: #444747;
+  --h-divider: #d5d5d5;
+  --h-content-border: #e8e8e8;
+  --h-hover: rgba(0, 0, 0, .06);
+  --h-focus: #3551d2;
+}
+
+/* ---------- Colours: dark (measured pixel-exact from Helium) ---------- */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --h-frame: #1e2020;
+    --h-field: #343636;
+    --h-field-hover: #3a3c3c;
+    --h-tab-hover: #282a2a;          /* active tab colour at 45% */
+    --h-popup: #242626;
+    --h-fg: #e3e2e2;
+    --h-fg2: #c6c6c6;
+    --h-icon: #c6c6c6;
+    --h-divider: #5d5e5f;
+    --h-content-border: #353737;
+    --h-hover: rgba(255, 255, 255, .08);
+    --h-focus: #bac3ff;
+  }
+}
+
+/* ---------- Feed the colours into Firefox's own variables ---------- */
+:root {
+  --toolbar-bgcolor: var(--h-frame) !important;
+  --toolbar-color: var(--h-fg) !important;
+  --toolbar-field-background-color: var(--h-field) !important;
+  --toolbar-field-focus-background-color: var(--h-field) !important;
+  --toolbar-field-color: var(--h-fg) !important;
+  --toolbar-field-focus-color: var(--h-fg) !important;
+  --toolbar-field-border-color: transparent !important;
+  --toolbar-field-focus-border-color: var(--h-focus) !important;
+  --tab-selected-bgcolor: var(--h-field) !important;
+  --tab-selected-textcolor: var(--h-fg) !important;
+  --tab-hover-background-color: var(--h-tab-hover) !important;
+  --tab-selected-shadow: none !important;
+  --tab-selected-outline-color: transparent !important;
+  --focus-outline-color: var(--h-focus) !important;
+  --toolbarbutton-hover-background: var(--h-hover) !important;
+  --toolbarbutton-active-background: var(--h-hover) !important;
+  --toolbarbutton-border-radius: 6px !important;
+  --toolbarbutton-outer-padding: 1px !important;
+  --toolbarbutton-inner-padding: 6px !important;   /* 16px icon + 12px = 28px */
+  --toolbarbutton-icon-fill: var(--h-icon) !important;
+  --lwt-accent-color: var(--h-frame) !important;
+  --lwt-text-color: var(--h-fg) !important;
+  --toolbox-background-image: none !important;
+  --chrome-content-separator-color: transparent !important;
+  --arrowpanel-background: var(--h-popup) !important;
+  --arrowpanel-color: var(--h-fg) !important;
+  --arrowpanel-border-color: var(--h-content-border) !important;
+  --arrowpanel-border-radius: var(--h-radius) !important;
+  --panel-border-radius: var(--h-radius) !important;
+  --urlbar-min-height: var(--h-bar) !important;
+  --urlbar-height: var(--h-bar) !important;
+  --urlbar-container-height: calc(var(--h-bar) + 2 * var(--h-pad)) !important;
+  --urlbar-box-background-color: transparent !important;
+  --tab-min-height: var(--h-bar) !important;
+  --tab-block-margin: 0px !important;
+  --tab-border-radius: var(--h-radius) !important;
+}
+
+/* ==========================================================================
+   Layout
+   ========================================================================== */
+#navigator-toolbox {
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column !important;
+  background: var(--h-frame) !important;
+  border-bottom: none !important;
+}
+#toolbar-menubar { order: 0 !important; }
+#toolbar-menubar[autohide="true"][inactive] { display: none !important; }
+#nav-bar         { order: 1 !important; }
+#TabsToolbar     { order: 2 !important; }
+#PersonalToolbar { order: 3 !important; }
+#navigator-toolbox > toolbar[collapsed="true"]:not(#TabsToolbar) { display: none !important; }
+
+#nav-bar, #TabsToolbar {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+/* Row 1: 3px above and below the 28px controls, room on the right for the window buttons */
+#nav-bar {
+  min-height: calc(var(--h-bar) + 2 * var(--h-pad)) !important;
+  max-height: calc(var(--h-bar) + 2 * var(--h-pad)) !important;
+  padding: 0 143px 0 5px !important;      /* ⋮ ends 5.5px before the window buttons */
+  -moz-window-dragging: drag !important;
+}
+/* Helium buttons: 28x28, 30.5px apart */
+#nav-bar .toolbarbutton-1 {
+  padding: 0 !important;
+  margin: 0 1.25px !important;
+}
+#nav-bar .toolbarbutton-1 > :is(.toolbarbutton-icon, .toolbarbutton-badge-stack) {
+  width: var(--h-bar) !important;
+  height: var(--h-bar) !important;
+  padding: 6px !important;
+  border-radius: 6px !important;
+}
+#nav-bar .toolbarbutton-1:not([disabled]):hover > :is(.toolbarbutton-icon, .toolbarbutton-badge-stack) {
+  background: var(--h-hover) !important;
+}
+/* Plain "+" like Helium's new-tab button */
+#new-tab-button {
+  list-style-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23444747' stroke-width='1.6' stroke-linecap='round'%3E%3Cpath d='M8 3v10M3 8h10'/%3E%3C/svg%3E") !important;
+}
+@media (prefers-color-scheme: dark) {
+  #new-tab-button {
+    list-style-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23c6c6c6' stroke-width='1.6' stroke-linecap='round'%3E%3Cpath d='M8 3v10M3 8h10'/%3E%3C/svg%3E") !important;
+  }
+}
+#nav-bar :is(toolbarbutton, #urlbar-container, toolbaritem, #urlbar),
+#PanelUI-button { -moz-window-dragging: no-drag !important; }
+#vertical-spacer, #nav-bar .titlebar-buttonbox-container, .titlebar-spacer { display: none !important; }
+
+/* Pinned extension icons sit before the puzzle button, like Helium */
+#nav-bar-customization-target > #downloads-button        { order: 98 !important; }
+#nav-bar-customization-target > #unified-extensions-button { order: 99 !important; }
+
+/* Row 2: tabs. 0px above (row 1 already has 3px), 3px below */
+#TabsToolbar {
+  min-height: calc(var(--h-bar) + var(--h-pad)) !important;
+  padding: 0 var(--h-pad) var(--h-pad) 2.5px !important;
+}
+/* Globe for pages without a favicon, like Helium */
+.tabbrowser-tab:not([image], [busy], [pending]) .tab-icon-image {
+  display: block !important;
+  content: url("chrome://global/skin/icons/defaultFavicon.svg") !important;
+  -moz-context-properties: fill !important;
+  fill: var(--h-fg2) !important;
+}
+#TabsToolbar-customization-target { min-height: var(--h-bar) !important; }
+
+/* Dynamic layout: hide the tab row while only one tab is open */
+:root:not(:has(#tabbrowser-tabs .tabbrowser-tab:not([hidden]) ~ .tabbrowser-tab:not([hidden]))) #TabsToolbar {
+  min-height: 0 !important;
+  max-height: 0 !important;
+  padding: 0 !important;
+}
+:root:not(:has(#tabbrowser-tabs .tabbrowser-tab:not([hidden]) ~ .tabbrowser-tab:not([hidden]))) #TabsToolbar-customization-target {
+  visibility: hidden !important;
+}
+
+/* Window buttons pinned to the top-right corner of row 1 */
+#TabsToolbar .titlebar-buttonbox-container {
+  position: absolute !important;
+  top: 0 !important; right: 0 !important;
+  height: calc(var(--h-bar) + 2 * var(--h-pad)) !important;
+  visibility: visible !important;
+  z-index: 2 !important;
+}
+.titlebar-button { background: transparent !important; padding-inline: 17.75px !important; }   /* 45.5px wide, like Helium */
+.titlebar-button:hover { background: var(--h-hover) !important; }
+.titlebar-close:hover { background: #c42b1c !important; }
+.titlebar-button > .toolbarbutton-icon { stroke: var(--h-fg2) !important; }
+
+/* Hide things Helium doesn't show */
+#alltabs-button, #firefox-view-button, #ipprotection-button,
+#nav-bar-overflow-button:not([overflowedItems]),
+#tabs-newtab-button { display: none !important; }
+
+/* ---------- Toolbar buttons ---------- */
+toolbar .toolbarbutton-1 { fill: var(--h-icon) !important; }
+#nav-bar .toolbarbutton-1 { margin-inline: 1px !important; }
+#back-button[disabled], #forward-button[disabled] { opacity: .4 !important; }
+
+/* Helium's three-dot menu */
+#PanelUI-button { margin: 0 !important; padding: 0 !important; border: none !important; }
+#PanelUI-menu-button {
+  list-style-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23444747'%3E%3Ccircle cx='8' cy='3' r='1.4'/%3E%3Ccircle cx='8' cy='8' r='1.4'/%3E%3Ccircle cx='8' cy='13' r='1.4'/%3E%3C/svg%3E") !important;
+}
+@media (prefers-color-scheme: dark) {
+  #PanelUI-menu-button {
+    list-style-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23c6c6c6'%3E%3Ccircle cx='8' cy='3' r='1.4'/%3E%3Ccircle cx='8' cy='8' r='1.4'/%3E%3Ccircle cx='8' cy='13' r='1.4'/%3E%3C/svg%3E") !important;
+  }
+}
+
+/* ---------- Address bar: fills the row, URL centred ---------- */
+#urlbar-container {
+  flex: 1 1 auto !important;
+  width: auto !important;
+  min-width: 300px !important;
+  height: calc(var(--h-bar) + 2 * var(--h-pad)) !important;
+  margin-inline: 5px !important;
+  padding: 0 !important;
+}
+#urlbar {
+  height: var(--h-bar) !important;
+  min-height: var(--h-bar) !important;
+  top: 0 !important;
+}
+#urlbar-container { margin-inline-start: 7px !important; }
+
+/* Helium shows one "site info" icon on the left and only the star on the right */
+#tracking-protection-icon-container,
+#page-action-buttons > :not(#star-button-box, #urlbar-zoom-button, #reader-mode-button[readeractive], #translations-button[translationsactive]) {
+  display: none !important;
+}
+.searchmode-switcher, #urlbar-searchmode-switcher {
+  --button-background-color-muted: transparent !important;
+  --button-background-color-muted-hover: var(--h-hover) !important;
+  --button-background-color-muted-active: var(--h-hover) !important;
+  background-color: transparent !important;
+}
+.urlbar-background {
+  background: var(--h-field) !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  border-radius: var(--h-radius) !important;
+}
+#urlbar:not([focused]):hover .urlbar-background { background: var(--h-field-hover) !important; }
+#urlbar[focused] .urlbar-background {
+  outline: 1.5px solid var(--h-focus) !important;
+  outline-offset: -1.5px !important;
+}
+#urlbar[open] .urlbar-background {
+  background: var(--h-popup) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .3) !important;
+}
+#urlbar { color: var(--h-fg) !important; font-size: var(--h-url-font) !important; }
+.urlbar-input-container { padding-block: 0 !important; height: var(--h-bar) !important; }
+.urlbar-input::placeholder { color: transparent !important; }   /* Helium's empty bar shows no hint text */
+/* Centre the URL while not editing (Helium shows it centred) */
+#urlbar:not([focused]) .urlbar-input { text-align: center !important; }
+#urlbar:not([focused]) .urlbar-input-box { padding-inline-end: 28px !important; }
+/* No grow-on-focus jump */
+#urlbar[breakout][breakout-extend] {
+  --urlbar-height: var(--h-bar) !important;
+  margin-inline-start: 0 !important;
+  width: var(--urlbar-width) !important;
+  top: 0 !important;
+}
+#urlbar[breakout][breakout-extend] > .urlbar-input-container {
+  height: var(--h-bar) !important;
+  padding: 0 !important;
+}
+/* Small icons inside the bar */
+#urlbar-searchmode-switcher {
+  background: transparent !important;
+  border-radius: 6px !important;
+  padding-inline: 5px !important;
+  margin-inline: 3px 0 !important;
+}
+#urlbar-searchmode-switcher:hover { background: var(--h-hover) !important; }
+.searchmode-switcher-dropmarker, #identity-icon-label { display: none !important; }
+#identity-box > box, .urlbar-page-action, #tracking-protection-icon-container,
+#urlbar-label-box, #urlbar-search-mode-indicator { border-radius: 6px !important; }
+#identity-box > box { background: transparent !important; }
+/* Results list */
+.urlbarView-row > .urlbarView-row-inner { border-radius: 6px !important; }
+.urlbarView-row[selected] > .urlbarView-row-inner { background: var(--h-hover) !important; color: inherit !important; }
+.urlbarView-body-inner { border-top: 1px solid var(--h-content-border) !important; }
+.search-one-offs { border-top-color: var(--h-content-border) !important; }
+
+/* ---------- Tabs ---------- */
+#tabbrowser-tabs {
+  border-inline-start: none !important;
+  padding-inline: 0 !important;
+  margin-inline: 0 !important;
+  min-height: var(--h-bar) !important;
+}
+/* Not on closing tabs: Firefox shrinks them to 0 and only removes them when that finishes */
+#tabbrowser-tabs[orient="horizontal"] .tabbrowser-tab[fadein]:not([pinned], [closing]) {
+  max-width: var(--h-tab-slot) !important;
+}
+.tabbrowser-tab {
+  padding: 0 2px !important;                    /* 4px gap between 197px backgrounds */
+  min-height: var(--h-bar) !important;
+  color: var(--h-fg2) !important;
+}
+.tabbrowser-tab[selected] { color: var(--h-fg) !important; }
+.tab-stack { position: relative; }
+.tab-background {
+  border-radius: var(--h-radius) !important;
+  margin-block: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  background: transparent !important;
+}
+.tabbrowser-tab:hover:not([selected]) > .tab-stack > .tab-background {
+  background: var(--h-tab-hover) !important;
+}
+.tabbrowser-tab:is([selected], [multiselected]) > .tab-stack > .tab-background {
+  background: var(--h-field) !important;
+}
+.tab-content { padding-inline: 6.5px 5px !important; }
+.tab-icon-stack { margin-inline-end: 2px !important; }
+.tab-label { font-size: var(--h-tab-font) !important; }
+.tab-close-button {
+  width: 20px !important; height: 20px !important;
+  padding: 5px !important;
+  border-radius: 4px !important;
+  margin-inline-end: 0 !important;
+}
+.tabbrowser-tab:not(:hover, [selected]) .tab-close-button { display: none !important; }
+
+/* 1px divider between neighbouring unselected, unhovered tabs */
+.tabbrowser-tab:not([selected], :hover) + .tabbrowser-tab:not([selected], :hover) > .tab-stack::before {
+  content: "";
+  position: absolute;
+  left: -2px;
+  top: 7px;
+  bottom: 7px;
+  width: 1px;
+  background: var(--h-divider);
+}
+
+/* No scroll arrows or edge shadows on the tab strip */
+#scrollbutton-up, #scrollbutton-down,
+#tabbrowser-arrowscrollbox::part(overflow-start-indicator),
+#tabbrowser-arrowscrollbox::part(overflow-end-indicator) { display: none !important; }
+
+/* ---------- Page area: 3px inset, 1px border, rounded like Helium ---------- */
+#browser, #tabbrowser-tabbox, #tabbrowser-tabpanels, #appcontent {
+  background: var(--h-frame) !important;
+}
+#tabbrowser-tabpanels, .browserContainer, .browserStack {
+  border: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+#tabbrowser-tabbox {
+  margin: 0 var(--h-pad) var(--h-pad) !important;
+  border: 1px solid var(--h-content-border) !important;
+  border-radius: var(--h-radius) !important;
+  overflow: clip !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+:root[sizemode="fullscreen"] #tabbrowser-tabbox,
+:root[inDOMFullscreen] #tabbrowser-tabbox { margin: 0 !important; border: none !important; border-radius: 0 !important; }
+
+/* ---------- Menus and popups ---------- */
+menupopup, panel {
+  --panel-background: var(--h-popup) !important;
+  --panel-color: var(--h-fg) !important;
+  --panel-border-color: var(--h-content-border) !important;
+  --panel-border-radius: var(--h-radius) !important;
+}
+menupopup menuitem, menupopup menu, .subviewbutton { border-radius: 6px !important; }
+menupopup :is(menuitem, menu)[_moz-menuactive] {
+  background-color: var(--h-hover) !important;
+  color: var(--h-fg) !important;
+}
+toolbarseparator, menuseparator { border-color: var(--h-content-border) !important; }
+
+findbar { background: var(--h-frame) !important; border-top: none !important; }
+.findbar-textbox { background: var(--h-field) !important; border: none !important; border-radius: 6px !important; }
+
+/* Helium has no ripple/slide animations on the toolbar */
+toolbarbutton, .tab-background { transition: none !important; }
+
+/* New-tab page tab gets a star icon instead of the Firefox logo, like Helium */
+.tab-icon-image[src^="chrome://branding/"] {
+  content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23e9ecf5' stroke-width='2.6' stroke-linecap='round'%3E%3Cpath d='M12 2v20M2 12h20M4.9 4.9l14.2 14.2M19.1 4.9 4.9 19.1'/%3E%3C/svg%3E") !important;
+}
+@media not (prefers-color-scheme: dark) {
+  .tab-icon-image[src^="chrome://branding/"] {
+    content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233551d2' stroke-width='2.6' stroke-linecap='round'%3E%3Cpath d='M12 2v20M2 12h20M4.9 4.9l14.2 14.2M19.1 4.9 4.9 19.1'/%3E%3C/svg%3E") !important;
+  }
+}
+/* Firefox reserves empty space after you close tabs with the mouse and only
+   removes it when the mouse moves away. With the tab row hiding at one tab,
+   that never happens and the gap gets stuck. Helium has no such spacer. */
+.closing-tabs-spacer { width: 0 !important; min-width: 0 !important; }
+
+/* Firefox 159 "trust" icon: Helium's sliders on safe pages; warnings untouched */
+#trust-icon-container:not(.insecure, .breached) #trust-icon {
+  list-style-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23444747' stroke-width='1.4' stroke-linecap='round'%3E%3Cpath d='M2 5h5M11 5h3M2 11h3M9 11h5'/%3E%3Ccircle cx='9' cy='5' r='1.8'/%3E%3Ccircle cx='7' cy='11' r='1.8'/%3E%3C/svg%3E") !important;
+  animation: none !important;
+  opacity: 1 !important;
+}
+@media (prefers-color-scheme: dark) {
+  #trust-icon-container:not(.insecure, .breached) #trust-icon {
+    list-style-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23c6c6c6' stroke-width='1.4' stroke-linecap='round'%3E%3Cpath d='M2 5h5M11 5h3M2 11h3M9 11h5'/%3E%3Ccircle cx='9' cy='5' r='1.8'/%3E%3Ccircle cx='7' cy='11' r='1.8'/%3E%3C/svg%3E") !important;
+  }
+}
+#trust-icon-container { border-radius: 6px !important; }
+
+/* Bookmarks bar (if shown): same colour as the frame, Helium-style buttons */
+#PersonalToolbar {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 var(--h-pad) var(--h-pad) calc(var(--h-pad) * 2) !important;
+  min-height: 28px !important;
+}
+#PersonalToolbar .toolbarbutton-1, #PersonalToolbar .bookmark-item {
+  border-radius: 6px !important;
+  padding: 4px 6px !important;
+  color: var(--h-fg2) !important;
+}
+#PersonalToolbar .bookmark-item:hover { background: var(--h-hover) !important; }
+
+/* ==========================================================================
+   From Latin Accent Plus: your Windows accent colour (follows the wallpaper
+   when Windows picks the accent automatically). Hover backgrounds stay
+   Helium-neutral; the accent colours icons and text on hover, and the focus ring.
+   ========================================================================== */
+:root {
+  --h-accent: AccentColor;
+  --h-focus: var(--h-accent);
+  --toolbarbutton-icon-fill-attention: var(--h-accent) !important;
+}
+/* Text turns accent-coloured on hover */
+.tabbrowser-tab:hover .tab-label,
+menupopup :is(menuitem, menu)[_moz-menuactive],
+.subviewbutton:hover,
+.urlbarView-row:is([selected], :hover) .urlbarView-title,
+#PersonalToolbar .bookmark-item:hover .toolbarbutton-text {
+  color: var(--h-accent) !important;
+}
+/* Icons turn accent-coloured on hover */
+toolbar .toolbarbutton-1:not([disabled]):hover,
+#PanelUI-menu-button:hover,
+#urlbar-searchmode-switcher:hover,
+#trust-icon-container:hover,
+.tab-close-button:hover {
+  fill: var(--h-accent) !important;
+  color: var(--h-accent) !important;
+}
+#PersonalToolbar .bookmark-item:hover { color: var(--h-accent) !important; }
+#PersonalToolbar .bookmark-item:hover .toolbarbutton-icon { fill: var(--h-accent) !important; }
+.titlebar-button:not(.titlebar-close):hover > .toolbarbutton-icon { stroke: var(--h-accent) !important; }
+/* Recolourable versions of the custom icons (+, ⋮, sliders): drawn as a mask
+   filled with the icon colour, so hover can turn them accent-coloured */
+:root {
+  --h-svg-plus: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round'%3E%3Cpath d='M8 3v10M3 8h10'/%3E%3C/svg%3E");
+  --h-svg-dots: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='black'%3E%3Ccircle cx='8' cy='3' r='1.4'/%3E%3Ccircle cx='8' cy='8' r='1.4'/%3E%3Ccircle cx='8' cy='13' r='1.4'/%3E%3C/svg%3E");
+  --h-svg-tune: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.4' stroke-linecap='round'%3E%3Cpath d='M2 5h5M11 5h3M2 11h3M9 11h5'/%3E%3Ccircle cx='9' cy='5' r='1.8'/%3E%3Ccircle cx='7' cy='11' r='1.8'/%3E%3C/svg%3E");
+}
+#new-tab-button, #PanelUI-menu-button { list-style-image: none !important; }
+#new-tab-button > .toolbarbutton-icon,
+#PanelUI-menu-button > .toolbarbutton-badge-stack > .toolbarbutton-icon,
+#PanelUI-menu-button > .toolbarbutton-icon {
+  background-color: var(--h-icon) !important;
+  mask: var(--h-svg-plus) center / 16px 16px no-repeat !important;
+}
+#PanelUI-menu-button > .toolbarbutton-badge-stack > .toolbarbutton-icon,
+#PanelUI-menu-button > .toolbarbutton-icon { mask-image: var(--h-svg-dots) !important; }
+#new-tab-button:hover > .toolbarbutton-icon,
+#PanelUI-menu-button:hover .toolbarbutton-icon { background-color: var(--h-accent) !important; }
+/* hover background stays on the button itself, not the masked icon */
+#new-tab-button:hover, #PanelUI-menu-button:hover { background: transparent !important; }
+#new-tab-button:hover > .toolbarbutton-icon { box-shadow: none !important; }
+#nav-bar :is(#new-tab-button, #PanelUI-menu-button):hover { background-color: var(--h-hover) !important; border-radius: 6px !important; }
+
+#trust-icon-container:not(.insecure, .breached) #trust-icon {
+  list-style-image: none !important;
+  width: 16px !important; height: 16px !important;
+  background-color: var(--h-icon) !important;
+  mask: var(--h-svg-tune) center / 16px 16px no-repeat !important;
+}
+#trust-icon-container:not(.insecure, .breached):hover #trust-icon { background-color: var(--h-accent) !important; }
+/* ==========================================================================
+   From Latin Accent Plus: bookmarks bar revealed on hover.
+   Follows the Bookmarks Toolbar setting (right-click the toolbar):
+     Always Show      -> always visible
+     Only on New Tab  -> hidden, slides in while you hover the toolbar
+     Never Show       -> never visible
+   ========================================================================== */
+@media -moz-pref("browser.toolbars.bookmarks.visibility", "newtab") {
+  /* Only max-height and opacity animate (padding and min-height stay fixed,
+     so nothing jumps), and hiding waits 0.25s so a quick pass of the mouse
+     over the toolbar doesn't make the bar flicker. */
+  #navigator-toolbox > #PersonalToolbar {
+    display: flex !important;
+    visibility: visible !important;
+    box-sizing: border-box !important;
+    min-height: 0 !important;
+    height: 31px !important;
+    max-height: 0 !important;
+    padding-block: 0 var(--h-pad) !important;
+    overflow: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition: max-height .18s ease .25s, opacity .12s ease .25s !important;
+  }
+  #navigator-toolbox:hover > #PersonalToolbar,
+  #navigator-toolbox > #PersonalToolbar:focus-within,
+  #navigator-toolbox > #PersonalToolbar:has([open]) {
+    max-height: 31px !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    transition: max-height .18s ease, opacity .12s ease .05s !important;
+  }
+}
+
+/* ==========================================================================
+   From Latin Accent Plus: fullscreen / pointer-lock warning as a small pill
+   ========================================================================== */
+#fullscreen-warning.pointerlockfswarning,
+#pointerlock-warning.pointerlockfswarning {
+  box-sizing: border-box !important;
+  width: max-content !important;
+  max-width: min(720px, 92vw) !important;
+  min-height: 38px !important;
+  padding: 6px 8px 6px 14px !important;
+  gap: 8px !important;
+  align-items: center !important;
+  border: 1px solid var(--h-accent) !important;
+  border-radius: 999px !important;
+  background: var(--h-popup) !important;
+  color: var(--h-fg) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .28) !important;
+  font: message-box !important;
+  font-size: 13px !important;
+  line-height: 1.3 !important;
+}
+#fullscreen-warning.pointerlockfswarning { pointer-events: none !important; }
+#fullscreen-warning.pointerlockfswarning[onscreen],
+#pointerlock-warning.pointerlockfswarning[onscreen] { translate: 0 18px !important; }
+#fullscreen-warning.pointerlockfswarning[ontop],
+#pointerlock-warning.pointerlockfswarning[ontop] { translate: 0 8px !important; }
+#fullscreen-warning.pointerlockfswarning:is([data-identity="verifiedDomain"], [data-identity="unknownIdentity"])::before {
+  flex: 0 0 auto !important;
+  width: 16px !important; height: 16px !important; margin: 0 !important;
+  background-size: 16px 16px !important;
+  -moz-context-properties: fill !important;
+  fill: currentColor !important;
+  opacity: .86 !important;
+}
+:is(#fullscreen-warning, #pointerlock-warning) :is(.pointerlockfswarning-domain-text, .pointerlockfswarning-generic-text) {
+  margin: 0 !important; padding: 0 !important; min-width: 0 !important; max-width: 52vw !important;
+  overflow: hidden !important; white-space: nowrap !important; text-overflow: ellipsis !important;
+  color: var(--h-fg) !important;
+}
+#fullscreen-warning .pointerlockfswarning-domain { margin: 0 !important; font-weight: 600 !important; color: var(--h-fg) !important; }
+#fullscreen-warning .pointerlockfswarning-domain-text:not([hidden]) + .pointerlockfswarning-generic-text { display: none !important; }
+#fullscreen-exit-button {
+  pointer-events: auto !important;
+  flex: 0 0 auto !important;
+  width: 28px !important; height: 28px !important; min-width: 28px !important; min-height: 28px !important;
+  margin: 0 !important; padding: 0 !important; border: 0 !important; border-radius: 999px !important;
+  appearance: none !important;
+  background: var(--h-hover) !important;
+  color: var(--h-fg) !important;
+  font-size: 0 !important; line-height: 0 !important;
+  display: flex !important; align-items: center !important; justify-content: center !important;
+  cursor: pointer !important;
+}
+#fullscreen-exit-button::before {
+  content: "" !important;
+  width: 14px !important; height: 14px !important;
+  background-color: currentColor !important;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 3.5L12.5 12.5M12.5 3.5L3.5 12.5' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat !important;
+}
+#fullscreen-exit-button:hover { background: var(--h-accent) !important; color: var(--h-frame) !important; }
+#PanelUI-menu-button .toolbarbutton-icon { width: 16px !important; height: 16px !important; min-width: 16px !important; padding: 0 !important; }
+
+/* ==========================================================================
+   Address-bar dropdown, Helium-style: one dark panel, compact rows,
+   neutral highlight, URLs in your accent colour
+   ========================================================================== */
+#urlbar {
+  --urlbarview-background-color-hover: var(--h-hover) !important;
+  --urlbarview-background-color-selected: var(--h-hover) !important;
+  --urlbarview-text-color-hover: var(--h-fg) !important;
+  --urlbarview-text-color-selected: var(--h-fg) !important;
+  --urlbarview-text-color-secondary: var(--h-fg2) !important;
+  --urlbarview-text-color-action: var(--h-fg2) !important;
+  --urlbarview-separator-color: var(--h-content-border) !important;
+  --urlbarview-row-border-radius: 6px !important;
+  --urlbarview-row-min-height: 32px !important;
+  --urlbarview-row-inner-min-height: 32px !important;
+  --urlbarview-row-padding-block: 0px !important;
+  --urlbarview-row-extra-padding-block: 0px !important;
+  --urlbarview-icon-size: 16px !important;
+  --urlbarview-favicon-size: 16px !important;
+  --urlbarview-rich-suggestion-default-icon-size: 16px !important;
+  --urlbarview-rich-search-suggestion-icon-size: 16px !important;
+  --urlbarview-result-button-selected-background-color: var(--h-hover) !important;
+  --urlbarview-result-button-hover-background-color: var(--h-hover) !important;
+  --urlbarview-result-button-selected-color: var(--h-fg) !important;
+  --urlbarview-result-button-hover-color: var(--h-fg) !important;
+  --urlbarview-action-button-background-color: transparent !important;
+  --urlbarview-action-button-background-color-hover: var(--h-hover) !important;
+  --link-color: var(--h-accent) !important;
+}
+/* The open bar + results are one panel in the popup colour */
+#urlbar[open] .urlbar-background {
+  background: var(--h-popup) !important;
+  outline: 1px solid var(--h-content-border) !important;
+  outline-offset: -1px !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .35) !important;
+}
+#urlbar[open] .urlbar-input-container { background: transparent !important; }
+.urlbarView { background: transparent !important; color: var(--h-fg) !important; }
+.urlbarView-body-inner { border-top: 1px solid var(--h-content-border) !important; }
+.urlbarView-results { padding-block: 4px !important; }
+
+/* Rows */
+.urlbarView-row { padding-inline: 4px !important; }
+.urlbarView-row-inner {
+  min-height: 32px !important;
+  padding-block: 0 !important;
+  border-radius: 6px !important;
+  color: var(--h-fg) !important;
+}
+.urlbarView-row:is([selected], :hover) > .urlbarView-row-inner {
+  background: var(--h-hover) !important;
+  color: var(--h-fg) !important;
+}
+.urlbarView-title { font-size: 13px !important; }
+.urlbarView-title strong, .urlbarView-title > strong { font-weight: 600 !important; }
+.urlbarView-url,
+.urlbarView-row[type] .urlbarView-url { color: var(--h-accent) !important; font-size: 12px !important; }
+.urlbarView-action, .urlbarView-title-separator, .urlbarView-secondary { color: var(--h-fg2) !important; }
+.urlbarView-favicon, .urlbarView-type-icon { fill: var(--h-fg2) !important; }
+.urlbarView-row:is([selected], :hover) .urlbarView-favicon { fill: var(--h-accent) !important; }
+/* Group labels ("Firefox Suggest" etc.) small and quiet */
+.urlbarView-row[label]::before {
+  color: var(--h-fg2) !important;
+  opacity: .8 !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+}
+/* Search-engine shortcut row at the bottom */
+.search-one-offs { border-top: 1px solid var(--h-content-border) !important; padding-block: 4px !important; }
+.searchbar-engine-one-off-item { border-radius: 6px !important; }
+.searchbar-engine-one-off-item:is(:hover, [selected]) { background: var(--h-hover) !important; }
+
+/* ==========================================================================
+   Remove Firefox 159 "Nova" violet: its accent becomes your Windows accent,
+   and menu / panel highlights use Helium's neutral grey (text goes accent)
+   ========================================================================== */
+:root, menupopup, panel {
+  --color-accent-primary: AccentColor !important;
+  --color-accent-primary-hover: color-mix(in srgb, AccentColor 85%, white) !important;
+  --color-accent-primary-active: color-mix(in srgb, AccentColor 70%, white) !important;
+  --color-accent-primary-selected: AccentColor !important;
+  --button-background-color-ghost-hover: var(--h-hover) !important;
+  --button-background-color-ghost-active: var(--h-hover) !important;
+  --button-background-color-ghost-selected: var(--h-hover) !important;
+  --button-background-color-menu-hover: var(--h-hover) !important;
+  --button-background-color-menu-active: var(--h-hover) !important;
+  --button-background-color-menu-selected: var(--h-hover) !important;
+  --button-border-color-ghost-hover: transparent !important;
+  --button-border-color-menu-hover: transparent !important;
+}
+.subviewbutton:not([disabled]):is(:hover, :focus-visible, [open]),
+.subviewbutton:not([disabled]):hover:active,
+menupopup :is(menuitem, menu):not([disabled])[_moz-menuactive] {
+  background-color: var(--h-hover) !important;
+  color: var(--h-accent) !important;
+  border-color: transparent !important;
+}
+.subviewbutton:not([disabled]):hover > .toolbarbutton-icon { fill: var(--h-accent) !important; }
+
+/* ==========================================================================
+   Small animations from Latin Accent Plus, toned down to Helium's style:
+   short, no bounce. Off when Windows "Animation effects" is turned off.
+   ========================================================================== */
+@media (prefers-reduced-motion: no-preference) {
+  /* Tab switch: the page eases in with a tiny zoom */
+  @keyframes h-tab-in {
+    from { scale: .98; opacity: .85; }
+    to   { scale: 1;   opacity: 1; }
+  }
+  #tabbrowser-tabpanels > .deck-selected {
+    transform-origin: center;
+    animation: h-tab-in .15s ease-out;
+  }
+
+  /* Address-bar results fade in and slide down a little */
+  @keyframes h-drop-in {
+    from { opacity: 0; translate: 0 -4px; }
+    to   { opacity: 1; translate: 0 0; }
+  }
+  #urlbar[open] .urlbarView {
+    animation: h-drop-in .14s ease-out;
+  }
+
+  /* Tab close button fades in when you hover a tab */
+  @keyframes h-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  .tabbrowser-tab:hover:not([selected]) .tab-close-button {
+    animation: h-fade-in .12s ease-out;
+  }
+}
+
+/* ==========================================================================
+   Loading progress bar, copied from Helium (progress-bar.patch):
+   a 1.25px accent line along the bottom of the address bar with a soft
+   4px glow above it that pulses every 0.7s; fades out over 0.32s when
+   the page has loaded. Firefox doesn't expose the real percentage, so
+   the line eases towards 90% while loading and fills up on finish.
+   ========================================================================== */
+#urlbar .urlbar-background { overflow: hidden !important; }
+#urlbar .urlbar-background::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 5px;
+  width: 100%;
+  background:
+    linear-gradient(var(--h-accent), var(--h-accent)) bottom / 100% 1.25px no-repeat,
+    linear-gradient(to top, color-mix(in srgb, var(--h-accent) 45%, transparent), transparent);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .32s ease-out;
+}
+:root:has(#tabbrowser-tabs .tabbrowser-tab[selected][busy]) #urlbar:not([open]) .urlbar-background::after {
+  opacity: 1;
+  transition: none;
+  animation:
+    h-progress 6s cubic-bezier(.1, .7, .3, 1) forwards,
+    h-progress-glow .7s ease-in-out infinite alternate;
+}
+@keyframes h-progress {
+  from { width: 5%; }
+  to   { width: 90%; }
+}
+@keyframes h-progress-glow {
+  from { filter: brightness(.85); }
+  to   { filter: brightness(1.25); }
+}
+
+/* ==========================================================================
+   Popups in Helium style: right-click menus, panels (downloads, extensions,
+   site info, app menu), permission prompts, notification bar, find bar,
+   tooltips. 8px corners, 1px border, popup colour, neutral highlight,
+   accent text on hover, accent primary buttons.
+   ========================================================================== */
+/* Right-click and dropdown menus */
+menupopup {
+  --panel-background: var(--h-popup) !important;
+  --panel-color: var(--h-fg) !important;
+  --panel-border-color: var(--h-content-border) !important;
+  --panel-border-radius: var(--h-radius) !important;
+  --panel-padding: 4px !important;
+  --panel-shadow: 0 8px 24px rgba(0, 0, 0, .35) !important;
+}
+menupopup > :is(menuitem, menu) {
+  min-height: 28px !important;
+  padding-block: 4px !important;
+  padding-inline: 8px !important;
+  border-radius: 6px !important;
+}
+menupopup > menuseparator {
+  border-top-color: var(--h-content-border) !important;
+  margin: 4px 6px !important;
+}
+menupopup :is(menuitem, menu)[disabled] { opacity: .45 !important; }
+
+/* Arrow panels: app menu, downloads, extensions, site info, permission prompts */
+panel[type="arrow"] {
+  --panel-background: var(--h-popup) !important;
+  --panel-border-color: var(--h-content-border) !important;
+  --panel-border-radius: var(--h-radius) !important;
+  --panel-shadow: 0 8px 24px rgba(0, 0, 0, .35) !important;
+  --arrowpanel-padding: 4px !important;
+}
+panel[type="arrow"]::part(content) {
+  border-radius: var(--h-radius) !important;
+  border: 1px solid var(--h-content-border) !important;
+}
+.panel-header { min-height: 36px !important; }
+.panel-header > h1 { font-size: 13px !important; font-weight: 600 !important; }
+toolbarseparator { border-top-color: var(--h-content-border) !important; }
+.subviewbutton {
+  min-height: 28px !important;
+  padding-block: 4px !important;
+  margin-inline: 4px !important;
+}
+
+/* Buttons inside panels and prompts */
+:is(panel, .popup-notification-panel, notification-message) button:not(.subviewbutton, .close-icon),
+.panel-footer > button,
+.popup-notification-button {
+  border-radius: 6px !important;
+  border: none !important;
+  min-height: 28px !important;
+  background-color: var(--h-hover) !important;
+  color: var(--h-fg) !important;
+}
+:is(panel, .popup-notification-panel, notification-message) button:not(.subviewbutton, .close-icon):hover,
+.panel-footer > button:hover,
+.popup-notification-button:hover {
+  color: var(--h-accent) !important;
+  background-color: color-mix(in srgb, var(--h-hover) 100%, var(--h-fg) 6%) !important;
+}
+:is(panel, notification-message) button:is(.primary, [default]),
+.panel-footer > button:is(.primary, [default]),
+.popup-notification-primary-button {
+  background-color: var(--h-accent) !important;
+  color: AccentColorText !important;
+}
+:is(panel, notification-message) button:is(.primary, [default]):hover,
+.panel-footer > button:is(.primary, [default]):hover,
+.popup-notification-primary-button:hover {
+  background-color: color-mix(in srgb, var(--h-accent) 85%, white) !important;
+  color: AccentColorText !important;
+}
+
+/* Downloads list */
+#downloadsListBox > richlistitem {
+  border-radius: 6px !important;
+  margin-inline: 4px !important;
+}
+#downloadsListBox > richlistitem:is(:hover, [selected]) {
+  background-color: var(--h-hover) !important;
+}
+#downloadsListBox > richlistitem:hover .downloadTarget { color: var(--h-accent) !important; }
+.downloadProgress::part(progress-bar), .downloadProgress > .progress-bar {
+  background-color: var(--h-accent) !important;
+  border-radius: 2px !important;
+}
+
+/* Notification bar (e.g. "Firefox prevented this site from…"): like
+   Helium's infobar, in the toolbar colour with a 1px edge */
+notification-message {
+  --message-bar-background-color: var(--h-frame) !important;
+  --message-bar-text-color: var(--h-fg) !important;
+  --message-bar-border-color: var(--h-content-border) !important;
+  --message-bar-icon-color: var(--h-accent) !important;
+  border-radius: var(--h-radius) !important;
+  margin: 0 var(--h-pad) var(--h-pad) !important;
+}
+
+/* Find bar: compact strip, 4px padding / 6px gaps like Helium's */
+findbar {
+  padding: 4px 6px !important;
+  gap: 6px !important;
+  border-top: 1px solid var(--h-content-border) !important;
+  color: var(--h-fg) !important;
+}
+findbar :is(.findbar-textbox, input[type="text"]) {
+  min-height: 26px !important;
+  padding-inline: 8px !important;
+  color: var(--h-fg) !important;
+}
+findbar :is(.findbar-textbox, input[type="text"]):focus {
+  outline: 1.5px solid var(--h-accent) !important;
+  outline-offset: -1.5px !important;
+}
+findbar :is(toolbarbutton, button, .findbar-button) {
+  border-radius: 6px !important;
+  color: var(--h-fg2) !important;
+}
+findbar :is(toolbarbutton, button, .findbar-button):hover {
+  background: var(--h-hover) !important;
+  color: var(--h-accent) !important;
+}
+findbar checkbox, findbar label { color: var(--h-fg2) !important; }
+
+/* Tooltips */
+tooltip {
+  appearance: none !important;
+  background-color: var(--h-popup) !important;
+  color: var(--h-fg) !important;
+  border: 1px solid var(--h-content-border) !important;
+  border-radius: 6px !important;
+  padding: 4px 8px !important;
+}
