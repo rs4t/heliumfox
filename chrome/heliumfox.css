@@ -308,7 +308,7 @@ toolbar .toolbarbutton-1 { fill: var(--h-icon) !important; }
 #tabbrowser-tabs[orient="horizontal"] .tabbrowser-tab[fadein]:not([pinned], [closing]) {
   max-width: var(--h-tab-slot) !important;
 }
-.tabbrowser-tab {
+#tabbrowser-tabs[orient="horizontal"] .tabbrowser-tab {
   padding: 0 2px !important;                    /* 4px gap between 197px backgrounds */
   min-height: var(--h-bar) !important;
   color: var(--h-fg2) !important;
@@ -328,8 +328,8 @@ toolbar .toolbarbutton-1 { fill: var(--h-icon) !important; }
 .tabbrowser-tab:is([selected], [multiselected]) > .tab-stack > .tab-background {
   background: var(--h-field) !important;
 }
-.tab-content { padding-inline: 6.5px 5px !important; }
-.tab-icon-stack { margin-inline-end: 2px !important; }
+#tabbrowser-tabs[orient="horizontal"] .tab-content { padding-inline: 6.5px 5px !important; }
+#tabbrowser-tabs[orient="horizontal"] .tab-icon-stack { margin-inline-end: 2px !important; }
 .tab-label { font-size: var(--h-tab-font) !important; }
 .tab-close-button {
   width: 20px !important; height: 20px !important;
@@ -340,7 +340,7 @@ toolbar .toolbarbutton-1 { fill: var(--h-icon) !important; }
 .tabbrowser-tab:not(:hover, [selected]) .tab-close-button { display: none !important; }
 
 /* 1px divider between neighbouring unselected, unhovered tabs */
-.tabbrowser-tab:not([selected], :hover) + .tabbrowser-tab:not([selected], :hover) > .tab-stack::before {
+#tabbrowser-tabs[orient="horizontal"] .tabbrowser-tab:not([selected], :hover) + .tabbrowser-tab:not([selected], :hover) > .tab-stack::before {
   content: "";
   position: absolute;
   left: -2px;
@@ -899,4 +899,120 @@ tooltip {
   border: 1px solid var(--h-content-border) !important;
   border-radius: 6px !important;
   padding: 4px 8px !important;
+}
+
+
+/* ==========================================================================
+   Layouts, like Helium's Settings > Appearance > Layout. Picked in the
+   Compact Mode extension (github.com/rs4t/firefox-compact), which marks the
+   window with an invisible character:
+     (none)  Dynamic  - toolbar on top, tab row only with 2+ tabs (default)
+     \2061   Classic  - tab row always on top, toolbar below
+     \2062   Compact  - everything in one row
+     Vertical uses Firefox's own vertical tabs (Settings > General >
+     Browser layout); the theme styles them automatically.
+   #main-window is the root, repeated in selectors to win over the
+   Dynamic rules above.
+   ========================================================================== */
+
+/* ---------- Classic ---------- */
+#main-window[titlepreface*="\2061"] #navigator-toolbox #TabsToolbar {
+  order: 1 !important;
+  min-height: calc(var(--h-bar) + var(--h-pad)) !important;
+  max-height: none !important;
+  padding: var(--h-pad) calc(var(--h-caption-width) + 4px) 0 2.5px !important;
+}
+#main-window[titlepreface*="\2061"] #navigator-toolbox #TabsToolbar-customization-target {
+  visibility: visible !important;
+}
+#main-window[titlepreface*="\2061"] #navigator-toolbox #nav-bar {
+  order: 2 !important;
+  padding-inline-end: 5px !important;
+}
+
+/* ---------- Compact: [<- -> reload] [address bar] [tabs ...] [+ ext ⋮] [_ □ x] ----------
+   The toolbar stays a normal toolbar (so Firefox's overflow menu keeps
+   working); an empty stretch after the address bar is the "slot", and the
+   tab row is pinned into it with CSS anchor positioning. */
+#main-window[titlepreface*="\2062"] #navigator-toolbox #urlbar-container {
+  flex: 0 0 auto !important;
+  width: clamp(350px, 32vw, 560px) !important;   /* Helium's kPreferredCompactWidth = 350 */
+}
+#main-window[titlepreface*="\2062"] #navigator-toolbox #nav-bar-customization-target {
+  flex: 1 1 auto !important;
+}
+#main-window[titlepreface*="\2062"] #navigator-toolbox #vertical-spacer {
+  display: flex !important;
+  visibility: visible !important;
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  width: auto !important;
+  align-self: stretch !important;
+  anchor-name: --h-tab-slot;
+}
+#main-window[titlepreface*="\2062"] #navigator-toolbox #TabsToolbar {
+  position: absolute !important;
+  position-anchor: --h-tab-slot;
+  left: anchor(left) !important;
+  right: anchor(right) !important;
+  top: anchor(top) !important;
+  bottom: anchor(bottom) !important;
+  align-items: center !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  z-index: 1 !important;
+}
+/* The window buttons normally hang off the tab row; here they stay in the corner */
+#main-window[titlepreface*="\2062"] #TabsToolbar .titlebar-buttonbox-container {
+  position: fixed !important;
+  top: 0 !important;
+  right: 0 !important;
+}
+
+/* ---------- Vertical tabs (Firefox's own setting) ---------- */
+#tabbrowser-tabs[orient="vertical"] .tabbrowser-tab {
+  padding-block: 1px !important;
+}
+#tabbrowser-tabs[orient="vertical"] .tabbrowser-tab:is([selected], [multiselected]) > .tab-stack > .tab-background {
+  background: var(--h-field) !important;
+}
+#sidebar-main, #sidebar-main > sidebar-main { background: var(--h-frame) !important; }
+/* Firefox's sidebar button expands and collapses the tab list */
+:root:has(#tabbrowser-tabs[orient="vertical"]) #sidebar-button { display: flex !important; }
+
+/* ==========================================================================
+   Frameless mode (Compact Mode extension: \2063 = tabs hidden, \2064 = URL
+   bar hidden). Like Helium: the page goes edge to edge, and the window
+   buttons stay with the toolbar.
+   ========================================================================== */
+#main-window[titlepreface*="\2063"] #tabbrowser-tabbox {
+  margin: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+}
+/* Everything hidden: the toolbar floats in over the page in the frame colour */
+#main-window[titlepreface*="\2063\2064"] #navigator-toolbox {
+  background-color: var(--h-frame) !important;
+  background-image: none !important;
+  border-radius: 0 0 var(--h-radius) var(--h-radius) !important;
+}
+/* "Always show the top bar" (only the tab row hides): keep the window
+   buttons, which live in the tab row, visible */
+#main-window[titlepreface*="\2063"]:not([titlepreface*="\2064"]) #navigator-toolbox #TabsToolbar {
+  opacity: 1 !important;
+  overflow: visible !important;
+}
+#main-window[titlepreface*="\2063"]:not([titlepreface*="\2064"]) #navigator-toolbox:not(:hover, :focus-within, [movingtab], :has(#urlbar[open], [open="true"])) #TabsToolbar-customization-target {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+/* Classic with the tab row hidden: the toolbar makes room for the window buttons */
+#main-window[titlepreface*="\2061"][titlepreface*="\2063"]:not([titlepreface*="\2064"]) #navigator-toolbox #nav-bar {
+  padding-inline-end: calc(var(--h-caption-width) + 5px) !important;
+}
+#main-window[titlepreface*="\2061"][titlepreface*="\2063"]:not([titlepreface*="\2064"]) #navigator-toolbox:not(:hover, :focus-within, [movingtab], :has(#urlbar[open], [open="true"])) #TabsToolbar {
+  min-height: 0 !important;
+  max-height: 0 !important;
+  padding: 0 !important;
 }

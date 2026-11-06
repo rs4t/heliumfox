@@ -33,3 +33,9 @@
     mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'%3E%3Cpath d='M12 2v20M2 12h20M4.9 4.9l14.2 14.2M19.1 4.9 4.9 19.1'/%3E%3C/svg%3E") center / contain no-repeat;
   }
 }
+
+/* Lets the Compact Mode extension see that HeliumFox is installed, so it can
+   offer the layout picker. Only matches extension pages, never websites. */
+@-moz-document url-prefix("moz-extension://") {
+  #heliumfox-probe { --heliumfox-css: v1; }
+}

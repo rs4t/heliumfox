@@ -10,7 +10,7 @@ Helium is the main inspiration. Its layout, sizes and colors were measured from 
 
 ## What it copies from Helium
 
-- **Dynamic layout:** one row with back, forward, reload, a wide address bar, `+`, extensions and the menu. Tabs appear in a second row only when 2 or more tabs are open.
+- **Dynamic layout:** one row with back, forward, reload, a wide address bar, `+`, extensions and the menu. Tabs appear in a second row only when 2 or more tabs are open. Helium's Classic, Compact and Vertical layouts are available too (see *Optional: layouts and frameless mode*).
 - **Exact sizes:** 28px address bar and buttons, 3px spacing, 197px tabs with 8px corners and thin dividers, and the page inset by 3px with a 1px border and rounded corners.
 - **Helium's colors** in dark and light mode. They follow your Windows setting.
 - **Address bar:** the URL is centered, there's one "site info" icon on the left and only the star on the right.
@@ -86,9 +86,18 @@ HeliumFox comes with a simple Helium-style new tab page (a gradient with a star)
 
 To also open it when Firefox starts, go to `about:preferences#home`, open **Homepage and new windows**, choose **Custom URLs…** and paste the same `file:///…/index.html` path.
 
-### Optional: compact mode
+### Optional: layouts and frameless mode
 
-[**Firefox Compact**](https://github.com/rs4t/firefox-compact) hides the toolbars until you hover the edge of the window, like Helium's frameless mode. It works on top of HeliumFox. Its `@import "compact.css";` line has to be the **first** line of `userChrome.css`.
+Install [**Firefox Compact**](https://github.com/rs4t/firefox-compact) to get Helium's layout settings in a popup:
+
+| Layout | What it does |
+| --- | --- |
+| **Dynamic** (default) | Toolbar on top. The tab row only appears with 2 or more tabs |
+| **Classic** | Tab row on top, toolbar below |
+| **Compact** | Everything in one row: address bar, tabs, `+`, extensions, menu |
+| **Vertical** | Firefox's own vertical tabs (Settings → General → Browser layout), styled like Helium |
+
+It also adds Helium's **Frameless mode**, which hides the toolbars until you hover the top of the window and makes the page go edge to edge. Its **Always show the top bar** option hides only the tabs. The installer keeps Firefox Compact's `@import "compact.css";` line first in `userChrome.css`.
 
 ---
 
